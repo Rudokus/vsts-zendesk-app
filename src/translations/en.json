@@ -4,13 +4,11 @@
         "parameters": {
             "vso_account": {
                 "label": "Visual Studio Team Services account name",
-                "helpText":
-                    "Enter your Visual Studio Team Services subdomain (part before visualstudio.com). Learn more by visiting http://go.microsoft.com/fwlink/?LinkID=396756"
+                "helpText": "Enter your Visual Studio Team Services subdomain (part before visualstudio.com). Learn more by visiting http://go.microsoft.com/fwlink/?LinkID=396756"
             },
             "vso_tag": {
                 "label": "Visual Studio Team Services work item tag",
-                "helpText":
-                    "Enter the tag you want to add to each Visual Studio Team Services linked work item. If empty, no tag will be added."
+                "helpText": "Enter the tag you want to add to each Visual Studio Team Services linked work item. If empty, no tag will be added."
             },
             "vso_wi_description_template": {
                 "label": "Visual Studio Team Services work item description template",
@@ -22,7 +20,8 @@
     "buttons": {
         "create": "New work item",
         "link": "Link to work item",
-        "notify": "Notify"
+        "notify": "Notify",
+        "activate": "Activate"
     },
     "parts": {
         "workItems": "Linked work items"
@@ -97,13 +96,17 @@
             "fields": {
                 "project": "Project",
                 "area": "Area",
+                "iteration": "Iteration",
                 "type": "Type",
                 "summary": "Summary",
                 "description": "Description",
                 "assignee": "Assignee",
                 "requester": "Requester",
                 "attachments": "Attachments",
-                "severity": "Severity"
+                "severity": "Severity",
+                "priority": "Priority",
+                "deadline": "Deadline",
+                "typeParent": "Parent Bug to ticket 17254"
             },
             "copyDescription": "Copy the ticket's description",
             "copyTemplate": "Use configured template"

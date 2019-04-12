@@ -40,3 +40,18 @@ See [full instructions](https://www.visualstudio.com/docs/marketplace/integrate/
 4. Pick and the Visual Studio Team Services event which will post to Zendesk
 5. Tell Zendesk what to do when the event occurs
 6. Test the service hook subscription and finish the wizard
+
+### how to package this APP
+
+1. Run command 'yarn build'
+2. Then go to the dist folder.
+3. Run command 'zat package'
+4. This will create a package in a tmp folder in de dist directory.
+
+### how to debug this APP
+
+1. Run command 'yarn watch'
+2. Then go to the dist folder.
+3. Run command 'zat server'
+4. Go though you're online zendesk environment and add ?zat=true to the URL.
+5. Also allow mixed content from the browser. Otherwise your local changes are not downloaded.

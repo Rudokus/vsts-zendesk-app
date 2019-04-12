@@ -1,9 +1,16 @@
+// Contents of dist is generated.
+/dist/*
+!/dist/manifest.json
+!/dist/**/*.png
+!/dist/**/*.svg
+
 *.zip
 debug.log
 .editorconfig
 node_modules
 .vscode
-/dist/*
-!/dist/manifest.json
-!/dist/**/*.png
-!/dist/**/*.svg
+.idea/
+*.production.js
+*.development.js
+
+!example.*.js

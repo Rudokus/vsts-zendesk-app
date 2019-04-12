@@ -8,13 +8,14 @@ const externalAssets = require("./lib/javascripts/external_assets");
 
 module.exports = {
   entry: {
+    vendor: [
+        "babel-polyfill"
+    ],
     app: [
-      "babel-polyfill",
       "./src/javascripts/index.js",
       "./src/stylesheets/app.scss"
     ],
     modal: [
-      "babel-polyfill",
       "./src/javascripts/modal.js",
       "./src/stylesheets/app.scss"
     ]
@@ -96,7 +97,7 @@ module.exports = {
       vendorCss: externalAssets.css,
       vendorJs: externalAssets.js,
       template: "!!handlebars-loader!./lib/templates/layout.hdbs",
-      chunks: ["app"],
+      chunks: ["vendor", "app"],
       filename: "index.html"
     }),
     new HtmlWebpackPlugin({
@@ -106,13 +107,7 @@ module.exports = {
       vendorJs: externalAssets.js,
       template: "!!handlebars-loader!./lib/templates/modal.hdbs",
       filename: "modal.html",
-      chunks: ["modal"]
-    }),
-    new webpack.optimize.UglifyJsPlugin({
-      compress: {
-        drop_debugger: false,
-        warnings: false
-      }
+      chunks: ["vendor", "modal"]
     })
   ]
 };

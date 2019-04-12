@@ -5,6 +5,7 @@ import BaseApp from "base_app";
 import helpers from "helpers";
 window.helpers = helpers;
 import _ from "lodash";
+import extendedApp from "./app";
 
 String.prototype.fmt = function() {
     return helpers.fmt.apply(this, [this, ...arguments]);
@@ -114,11 +115,35 @@ const getVm = function(path) {
 
 var INSTALLATION_ID = 0,
     //For dev purposes, when using Zat, set this to your current installation id
-    VSO_URL_FORMAT = "https://%@.visualstudio.com/DefaultCollection",
+    VSO_URL_FORMAT = VSO_URL,
     VSO_API_DEFAULT_VERSION = "1.0",
     VSO_API_RESOURCE_VERSION = {},
     TAG_PREFIX = "vso_wi_",
     DEFAULT_FIELD_SETTINGS = JSON.stringify({
+        "System.AssignedTo" : {
+            summary: true,
+            details: true,
+        },
+        "System.Description": {
+            summary: true,
+            details: true,
+        },
+        "System.IterationPath" : {
+            summary: true,
+            details: true,
+        },
+        "System.Reason" : {
+            summary: true,
+            details: true,
+        },
+        "System.State" : {
+            summary: true,
+            details: true,
+        },
+        "System.ChangedDate" : {
+            summary: true,
+            details: true,
+        },
         "System.WorkItemType": {
             summary: true,
             details: true,
@@ -127,14 +152,14 @@ var INSTALLATION_ID = 0,
             summary: false,
             details: true,
         },
-        "System.Description": {
-            summary: true,
-            details: true,
-        },
     }),
+    VSO_URL_BUG_PARENT_TICKET = 17254,
     VSO_ZENDESK_LINK_TO_TICKET_PREFIX = "ZendeskLinkTo_Ticket_",
     VSO_ZENDESK_LINK_TO_TICKET_ATTACHMENT_PREFIX = "ZendeskLinkTo_Attachment_Ticket_",
-    VSO_WI_TYPES_WHITE_LISTS = ["Bug", "Product Backlog Item", "User Story", "Requirement", "Issue"],
+    VSO_WI_TYPES_WHITE_LISTS = ["Bug", "Product Backlog Item", "User Story", "Requirement", "Issue", "Feature", "Task"],
+    // Fields that are used in de copy ticket description.
+    // These fields should be available from the ticket.
+    CUSTOMFIELDS = CUSTOM_DEFINED_FIELDS,
     VSO_PROJECTS_PAGE_SIZE = 100; //#endregion
 
 // Create a new ZAFClient
@@ -327,8 +352,11 @@ const ModalApp = BaseApp.extend({
         var projectCombo = $modal.find(".project");
         this.fillComboWithProjects(projectCombo);
         $modal.find(".inputVsoProject").on("change", this.onNewVsoProjectChange.bind(this));
+        $modal.find(".inputVsoType").on("change", this.onNewVsoWorkItemTypeChange.bind(this));
         $modal.find(".copyDescription").on("click", () => {
-            $modal.find(".description").val(getVm("temp[ticket]").description);
+            const _ticket2 = getVm("temp[ticket]");
+            $modal.find(".description").val(this.buildTicketDescription(_ticket2));
+            this.buildCustomTicketDescription(_ticket2);
         });
         $modal.find(".accept").on("click", () => {
             this.onNewWorkItemAcceptClick();
@@ -340,6 +368,71 @@ const ModalApp = BaseApp.extend({
         this.resize({ height: "520px", width: "780px" });
     },
 
+    buildTicketDescription: function (ticket) {
+        let value = '';
+        if (ticket.description) {
+            value += ticket.description + '\r';
+        }
+
+        if (ticket.requester.email) {
+            value += 'Aanvrager: ' + ticket.requester.email  + '\r';
+        }
+
+        if (ticket.requester.organizations.length != 0 && ticket.requester.organizations[0].name) {
+            value += 'Organisatie: ';
+            ticket.requester.organizations.forEach(function (organizationValue, organizationIndex) {
+                value += organizationValue.name;
+                // Only add comma when its not the last.
+                if (ticket.requester.organizations.length != (organizationIndex + 1)) {
+                    value += ', ';
+                }
+            });
+            value += '\r';
+        }
+
+        return value;
+    },
+
+    buildCustomTicketDescription: async function(ticket) {
+        const $modal = this.$("[data-main]");
+        const field = await this.addCustomFieldToDescription();
+        $modal.find(".description").val(this.buildTicketDescription(ticket) + field);
+    },
+
+    addCustomFieldToDescription: async function () {
+        var result = '';
+
+        function getKeyByValue(object, value) {
+            return Object.keys(object).find(function(key) {
+                return object[key] === value || Array.isArray(object[key]) && object[key].indexOf(value) > -1;
+            });
+        }
+
+        var customFields = [];
+        Object.values(CUSTOMFIELDS).forEach(function (fieldValue, fieldIndex) {
+            if (Array.isArray(fieldValue)) {
+                fieldValue.forEach(function (value) {
+                    customFields.push("ticket.customField:custom_field_" + value);
+                });
+            }
+            else {
+                customFields.push("ticket.customField:custom_field_" + fieldValue);
+            }
+        });
+        // Retrieve all Custom fields.
+        var ticketFields = await this._parentClient.get(customFields);
+        // Add fields
+        for( let fieldName in ticketFields) {
+            let fieldValue = ticketFields[fieldName];
+            if (customFields.indexOf(fieldName) > -1 && fieldValue ) {
+                // Get the Key from the custom field.
+                result += getKeyByValue(CUSTOMFIELDS, fieldName.replace(/[^\d-]/g, '')) + ': ' + fieldValue + '\r';
+            }
+        }
+
+        result += '\r';
+        return result;
+    },
     showBusy: function() {
         this.$("[data-main] .busySpinner").show();
     },
@@ -371,7 +464,6 @@ const ModalApp = BaseApp.extend({
         }
 
         const workItems = await this.execQueryOnSidebar(["fetchLinkedVsoWorkItems"]);
-
         // Must do these serially because my execQueryOnSidebar isn't threadsafe
         try {
             for (const workItem of workItems) {
@@ -476,7 +568,7 @@ const ModalApp = BaseApp.extend({
             //Let's check if there is already a link in the WI returned data
             const currentLink = _.find(
                 workItem.relations || [],
-                async function(link) {
+                function(link) {
                     if (
                         link.rel.toLowerCase() === "hyperlink" &&
                         link.attributes.name === VSO_ZENDESK_LINK_TO_TICKET_PREFIX + ticket.id
@@ -600,6 +692,21 @@ const ModalApp = BaseApp.extend({
         this.resize({ width: "580px" });
     },
 
+    vsoUrl: function(url, parameters) {
+        url = url[0] === "/" ? url.slice(1) : url;
+        var full = [getVm("accountUrl"), url].join("/");
+
+        if (parameters) {
+            full +=
+                "?" +
+                _.map(parameters, function(value, key) {
+                    return [key, value].join("=");
+                }).join("&");
+        }
+
+        return full;
+    },
+
     onNewWorkItemAcceptClick: async function() {
         const ticket = getVm("temp[ticket]");
 
@@ -612,8 +719,12 @@ const ModalApp = BaseApp.extend({
         }
 
         // read area id
-        const areaId = $modal.find(".area").val(); //check work item type
+        const areaId = $modal.find(".area").val();
 
+        // read iteration id
+        const iterationId = $modal.find('.iteration').val();
+
+        //check work item type
         const workItemType = this.getWorkItemTypeByName(proj, $modal.find(".type").val());
         if (!workItemType) {
             return this.showErrorInModal($modal, this.I18n.t("modals.new.errWorkItemTypeRequired"));
@@ -631,12 +742,28 @@ const ModalApp = BaseApp.extend({
             this.buildPatchToAddWorkItemField("System.Description", description),
         );
 
+        if (workItemType.name === 'Bug' && $modal.find('#parentType').is(':checked')) {
+            operations.push(this.buildPatchToAddWorkItemToParent(this.vsoUrl("/_apis/wit/workItems", undefined), VSO_URL_BUG_PARENT_TICKET));
+        }
+
         if (areaId) {
             operations.push(this.buildPatchToAddWorkItemField("System.AreaId", areaId));
         }
 
+        if (iterationId) {
+            operations.push(this.buildPatchToAddWorkItemField("System.IterationId", iterationId));
+        }
+
         if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.Common.Severity") && $modal.find(".severity").val()) {
             operations.push(this.buildPatchToAddWorkItemField("Microsoft.VSTS.Common.Severity", $modal.find(".severity").val()));
+        }
+
+        if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.Common.Priority") && $modal.find(".priority").val()) {
+            operations.push(this.buildPatchToAddWorkItemField("Microsoft.VSTS.Common.Priority", $modal.find(".priority").val()));
+        }
+
+        if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.Scheduling.DueDate") && $modal.find('.deadline').val()) {
+            operations.push(this.buildPatchToAddWorkItemField("Microsoft.VSTS.Scheduling.DueDate", $modal.find('.deadline').val()));
         }
 
         if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.TCM.ReproSteps")) {
@@ -776,6 +903,16 @@ const ModalApp = BaseApp.extend({
             value: value,
         };
     },
+    buildPatchToAddWorkItemToParent: function(url, workItemId) {
+        return {
+            op: "add",
+            path: "/relations/-",
+            value: {
+                rel: "System.LinkTypes.Hierarchy-Reverse",
+                url: url + '/' + workItemId,
+            },
+        };
+    },
     buildPatchToAddWorkItemHyperlink: function(url, name, comment) {
         return {
             op: "add",
@@ -842,12 +979,12 @@ const ModalApp = BaseApp.extend({
     onNewVsoProjectChange: function() {
         var $modal = this.$("[data-main]");
         var projId = $modal.find(".project").val();
-
         this.showBusy();
         this.loadProjectMetadata(projId)
             .then(
                 function() {
                     this.drawAreasList($modal.find(".area"), projId);
+                    this.drawIterationList($modal.find('.iteration'), projId);
                     this.drawTypesList($modal.find(".type"), projId);
                     $modal.find(".type").change();
                     this.hideBusy();
@@ -859,6 +996,49 @@ const ModalApp = BaseApp.extend({
                     this.showErrorInModal($modal, this.getAjaxErrorMessage(jqXHR));
                 }.bind(this),
             );
+    },
+    onNewVsoWorkItemTypeChange: function() {
+        var $modal = this.$("[data-main]");
+        var [proj, done] = this.getProjectById($modal.find(".project").val());
+        var workItemType = this.getWorkItemTypeByName(proj, $modal.find(".type").val());
+
+        if (workItemType.name === 'Bug') {
+            $modal.find(".typeParent").show();
+        } else {
+            $modal.find(".typeParent").hide();
+        }
+
+        //Check if we have severity
+        if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.Common.Severity")) {
+            $modal.find(".severityInput").show();
+        } else {
+            $modal.find(".severityInput").hide();
+        }
+
+        //Check if we have priority
+        if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.Common.Priority")) {
+            $modal.find(".priorityInput").show();
+        } else {
+            $modal.find(".priorityInput").hide();
+        }
+
+        //Check if we have due date
+        if (this.hasFieldDefined(workItemType, "Microsoft.VSTS.Scheduling.DueDate")) {
+            $modal.find('.deadlineInput').show();
+            const ticket = getVm("temp[ticket]");
+            if(ticket.hasOwnProperty('custom_field_44493245'))
+            {
+                var date = ticket.custom_field_44493245;
+                var day = ("0" + date.getDate()).slice(-2);
+                var month = ("0" + (date.getMonth() + 1)).slice(-2);
+                var datef =  date.getFullYear()+"-"+(month)+"-"+(day) ;
+                $modal.find('.deadline').val(datef);
+            }
+        } else {
+            $modal.find('.deadlineInput').hide();
+        }
+
+        done();
     },
     fillComboWithProjects: function(el) {
         el.html(
@@ -882,7 +1062,9 @@ const ModalApp = BaseApp.extend({
         project.workItemTypes = this.restrictToAllowedWorkItems(workItemData.value);
 
         const areaData = await this.execQueryOnSidebar(["ajax", "getVsoProjectAreas", project.id]);
+        const iterationData = await this.execQueryOnSidebar(["ajax", "getVsoProjectIterations", project.id]);
         var areas = []; // Flatten areas to format \Area 1\Area 1.1
+        var iterations = [];
 
         const visitArea = function(area, currentPath) {
             currentPath = currentPath ? currentPath + "\\" : "";
@@ -899,12 +1081,27 @@ const ModalApp = BaseApp.extend({
             }
         };
 
+        // Flatten iterations to format \Iteration 1\Iteration 1.1
+        const visitIteration = function (iteration, currentPath) {
+            currentPath = currentPath ? currentPath + "\\" : "";
+            currentPath = currentPath + iteration.name;
+            iterations.push({ id: iteration.id, name: currentPath });
+
+            if (iteration.children && iteration.children.length > 0) {
+                _.forEach(iteration.children, function (child) { visitIteration(child, currentPath); });
+            }
+        };
+
         visitArea(areaData);
+        visitIteration(iterationData);
         project.areas = _.sortBy(areas, function(area) {
             return area.name;
         });
-
+        project.iterations = _.sortBy(iterations, function (iteration) {
+            return iteration.name;
+        });
         project.metadataLoaded = true;
+
         done(); // set project back to localstorage
     },
 
@@ -950,6 +1147,15 @@ const ModalApp = BaseApp.extend({
             this.renderTemplate("types", {
                 types: project.workItemTypes,
             }),
+        );
+        done();
+    },
+    drawIterationList: function (select, projectId) {
+        var [project, done] = this.getProjectById(projectId);
+        select.html(
+            this.renderTemplate('iterations', {
+            iterations: project.iterations
+            })
         );
         done();
     },

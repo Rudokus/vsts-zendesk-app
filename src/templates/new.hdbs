@@ -21,21 +21,54 @@
             </div>
         </div>
         
+		<div class='control-group'>
+            <label class='control-label' for='iteration'>{{t "modals.new.fields.iteration"}}</label>
+            <div class='controls'>
+                <select id='iteration' class='iteration input-xlarge'></select>
+            </div>
+        </div>
+
         <div class='control-group'>
             <label class='control-label' for='type'>{{t "modals.new.fields.type"}}</label>
             <div class='controls'>
-                <select id='type' class='type input-xlarge'></select>
+                <select id='type' class='type input-xlarge inputVsoType'></select>
             </div>
         </div>
+        <div class="control-group typeParent">
+            <label class='control-label' for='parentType'>{{t "modals.new.fields.typeParent"}}</label>
+            <div class='controls'>
+                <input type='checkbox' id='parentType' class='form-check-input' checked="checked">
+            </div>
+        </div>
+
         <div class='control-group severityInput'>
             <label class='control-label' for='severity'>{{t "modals.new.fields.severity"}}</label>
             <div class='controls'>
                 <select id='severity' class='severity input-xlarge'>
-                    <option value='1 - Critical'>1 - Critical</option>
-                    <option value='2 - High'>2 - High</option>
-                    <option value='3 - Medium'>3 - Medium</option>
                     <option value='4 - Low'>4 - Low</option>
+                    <option value='3 - Medium'>3 - Medium</option>
+                    <option value='2 - High'>2 - High</option>
+                    <option value='1 - Critical'>1 - Critical</option>
                 </select>
+            </div>
+        </div>
+
+        <div class='control-group priorityInput'>
+            <label class='control-label' for='priority'>{{t "modals.new.fields.priority"}}</label>
+            <div class='controls'>
+                <select id='priority' class='priority input-xlarge'>
+                    <option value='1'>1</option>
+                    <option value='2'>2</option>
+                    <option value='3'>3</option>
+                    <option value='4'>4</option>
+                </select>
+            </div>
+        </div>
+
+		<div class='control-group deadlineInput'>
+            <label class='control-label' for='deadline'>{{t "modals.new.fields.deadline"}}</label>
+            <div class='controls'>
+               <input type='date' id='deadline' class='deadline input-xlarge'>
             </div>
         </div>
 
