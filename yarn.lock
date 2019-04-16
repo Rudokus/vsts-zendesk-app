@@ -3071,10 +3071,10 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.6
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.15.tgz#ffb703e1066e8a0eeaa4c8b80ba9253eeefbfb00"
   integrity sha512-6uHUhOPEBgQ24HM+r6b/QwWfZq+yiFcipKFrOFiBEnWdy5sdzYoi+pJeQaPI5qOLRFqWmAXUPQNsielzdLoecA==
 
-handlebars-loader@^1.5.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/handlebars-loader/-/handlebars-loader-1.7.0.tgz#4f750bc62c350fb922e52d8564d667887e909723"
-  integrity sha512-tfS3n+PrDB2gnDnrx0/DGvdb4wF4JqV7CEiVof3RymOIWYrcmD+ZiaXTlZ/f7fZ7+aQPEv6JRG0HS7nTlyvGlQ==
+handlebars-loader@1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/handlebars-loader/-/handlebars-loader-1.7.1.tgz#07088f09d8a559344908f7c88c68c0ffdacc555d"
+  integrity sha512-Q+Z/hDPQzU8ZTlVnAe/0T1LHABlyhL7opNcSKcQDhmUXK2ByGTqib1Z2Tfv4Ic50WqDcLFWQcOb3mhjcBRbscQ==
   dependencies:
     async "~0.2.10"
     fastparse "^1.0.0"
